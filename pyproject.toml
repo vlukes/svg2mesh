@@ -5,12 +5,12 @@ build-backend = "setuptools.build_meta"
 [project.urls]
 homepage = "https://github.com/sfepy/svg2mesh"
 
-[tool.setuptools.dynamic]
-version = {attr = "svg2mesh.__version__"}
+[project.scripts]
+svg2mesh = "svg2mesh.svg2mesh:main"
 
 [project]
 name = "SVG2mesh"
-dynamic = ["version"]
+version = "1.0.0"
 readme = "README.md"
 description="FE mesh generator "
 license = {file = "LICENSE"}

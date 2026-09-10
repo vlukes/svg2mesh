@@ -43,37 +43,37 @@ pip install svg2mesh
 ### Basic Usage
 
 ```bash
-python svg2mesh.py geometry.svg
+svg2mesh geometry.svg
 ```
 
 ### Specify Output File
 
 ```bash
-python svg2mesh.py geometry.svg -o mesh.vtk
+svg2mesh geometry.svg -o mesh.vtk
 ```
 
 ### Generate Unit Cell Mesh
 
 ```bash
-python svg2mesh.py geometry.svg -u
+svg2mesh geometry.svg -u
 ```
 
 ### Generate Periodic Mesh
 
 ```bash
-python svg2mesh.py geometry.svg -p
+svg2mesh geometry.svg -p
 ```
 
 ### Control Mesh Size
 
 ```bash
-python svg2mesh.py geometry.svg -s 0.05
+svg2mesh geometry.svg -s 0.05
 ```
 
 ### Export PNG Preview
 
 ```bash
-python svg2mesh.py geometry.svg -e
+svg2mesh geometry.svg -e
 ```
 
 ## Input Geometry
@@ -90,21 +90,21 @@ All SVG objects should be defined as paths.
 ### Mesh1 -- multimaterial part
 
 ```bash
-python svg2mesh.py mesh1.svg -s 10
+svg2mesh mesh1.svg -s 10
 ```
 ![mesh1.png](svg2mesh/examples/mesh1.png)
 
 ### Mesh2 -- single material part
 
 ```bash
-python svg2mesh.py mesh2.svg -s 5
+svg2mesh mesh2.svg -s 5
 ```
 ![mesh2.png](svg2mesh/examples/mesh2.png)
 
 ### Mesh3 -- periodic unit cell
 
 ```bash
-python svg2mesh.py mesh3.svg -u -s "[10, 2]"
+svg2mesh mesh3.svg -u -s "[10, 2]"
 ```
 ![mesh3.png](svg2mesh/examples/mesh3.png)
 
