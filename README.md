@@ -92,21 +92,21 @@ All SVG objects should be defined as paths.
 ```bash
 python svg2mesh.py mesh1.svg -s 10
 ```
-![mesh1.png](examples/mesh1.png)
+![mesh1.png](svg2mesh/examples/mesh1.png)
 
 ### Mesh2 -- single material part
 
 ```bash
 python svg2mesh.py mesh2.svg -s 5
 ```
-![mesh1.png](examples/mesh2.png)
+![mesh2.png](svg2mesh/examples/mesh2.png)
 
 ### Mesh3 -- periodic unit cell
 
 ```bash
 python svg2mesh.py mesh3.svg -u -s "[10, 2]"
 ```
-![mesh1.png](examples/mesh3.png)
+![mesh3.png](svg2mesh/examples/mesh3.png)
 
 ## License
 
