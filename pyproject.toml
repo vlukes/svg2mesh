@@ -5,6 +5,9 @@ build-backend = "setuptools.build_meta"
 [project.urls]
 homepage = "https://github.com/sfepy/svg2mesh"
 
+[tool.setuptools.dynamic]
+version = {attr = "svg2mesh.__version__"}
+
 [project]
 name = "SVG2mesh"
 dynamic = ["version"]
