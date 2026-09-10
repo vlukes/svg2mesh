@@ -32,10 +32,10 @@ cd svg2mesh
 pip install .
 ```
 
-### Development Installation
+### Install form PyPI
 
 ```bash
-pip install -e .
+pip install svg2mesh
 ```
 
 ## Usage
