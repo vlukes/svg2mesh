@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project.urls]
+homepage = "https://github.com/sfepy/svg2mesh"
+
+[project]
+name = "SVG2mesh"
+dynamic = ["version"]
+readme = "README.md"
+description="FE mesh generator "
+license = {file = "LICENSE"}
+authors = [{name = "Vladimír Lukeš", email = "vlukes@fav.zcu.cz"}]
+requires-python = ">=3.8"
+dependencies = ["numpy", "gmsh", "meshio", "svgelements"]
+keywords = ["SVG", "FE mesh", "generator"]
+classifiers = [
+    "Development Status :: 4 - Beta",  # 3 - Alpha, 4 - Beta, 5 - Stable
+    "Intended Audience :: Developers",
+    "Topic :: Scientific/Engineering",
+    "Programming Language :: Python",
+    "License :: OSI Approved :: MIT License",
+]
