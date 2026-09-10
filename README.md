@@ -27,7 +27,7 @@ and used in finite element analysis and scientific computing workflows.
 ### Install from Source
 
 ```bash
-git clone https://github.com/sfepy/svg2mesh.git
+git clone https://github.com/vlukes/svg2mesh.git
 cd svg2mesh
 pip install .
 ```
