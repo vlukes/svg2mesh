@@ -211,9 +211,9 @@ def save_png(filename_out, filename_png):
     Inputs
     ======
     filename_out: str
-        Output file name
+        Output filename
     filename_png: str
-        PNG output file name
+        PNG output filename
     """
     import pyvista as pv
 
@@ -241,9 +241,9 @@ def gen_mesh_from_svg(filename_svg, filename_out=None,
     Inputs
     ======
     filename_svg: str
-        SVG file name
+        SVG filename
     filename_out: str
-        Output file name
+        Output filename
     mesh_size: float
         Size of mesh elements
     unit_cell: bool
@@ -327,10 +327,12 @@ def gen_mesh_from_svg(filename_svg, filename_out=None,
         filename_out = f'{filename_base}.vtk'
 
     mesh.write(filename_out, binary=False)   
+    print(f'output file: {filename_out}')
 
     if export_png:
         filename_png = f'{filename_base}.png'
         save_png(filename_out, filename_png)
+        print(f'screenshot file: {filename_png}')
 
 
 def parse_args():
