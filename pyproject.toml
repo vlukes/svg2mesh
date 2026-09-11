@@ -10,7 +10,7 @@ svg2mesh = "svg2mesh.svg2mesh:main"
 
 [project]
 name = "SVG2mesh"
-version = "1.1.0"
+version = "1.2.0"
 readme = "README.md"
 description="FE mesh generator "
 license = {file = "LICENSE"}
