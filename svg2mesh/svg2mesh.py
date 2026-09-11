@@ -8,7 +8,7 @@ import meshio
 from svgelements import SVG
 
 
-def set_periodic(model, dx, dy, dz=0, dim=2):
+def set_periodic(model, dim=2):
     """
     Set mesh periodic.
     
@@ -19,7 +19,7 @@ def set_periodic(model, dx, dy, dz=0, dim=2):
     dx, dy, dz: floats
         Domain dimensions
     """
-    def set_periodic(master, slave, dx, dy, dz):
+    def _set_periodic(master, slave, dx, dy, dz):
         for m, s in zip(master, slave):
             gmsh.model.mesh.setPeriodic(
                 dim - 1, [s], [m],
@@ -38,7 +38,7 @@ def set_periodic(model, dx, dy, dz=0, dim=2):
         midxs = nm.where(nm.abs(bnd[:, k + 1] - cmin) < tol)[0]
         sidxs = nm.where(nm.abs(bnd[:, k + 1] - cmax) < tol)[0]
 
-        dv = nm.array([0] * 3)
+        dv = nm.array([0.] * 3)
         dd = cmax - cmin
         dv[k] = dd
 
@@ -49,8 +49,8 @@ def set_periodic(model, dx, dy, dz=0, dim=2):
             pairs.append((m, sidxs[idx[0]]))
         
         pairs = nm.array(pairs)
-        args = tuple(bnd[pairs, 0].T) + tuple(dv)
-        set_periodic(*args)
+        args = tuple(bnd[pairs, 0].astype(nm.int32).T) + tuple(dv)
+        _set_periodic(*args)
 
 
 def set_mesh_size(model, pgroups, msize, dim=2):
@@ -294,7 +294,7 @@ def gen_mesh_from_svg(filename_svg, filename_out=None,
         ms = mesh_size
 
     if periodic or unit_cell:
-        set_periodic(model, vbox.width, vbox.height, 0)
+        set_periodic(model, 2)
 
     set_mesh_size(model, pgs1, ms)
     gmsh.option.setNumber("Mesh.Algorithm", 2)
