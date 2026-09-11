@@ -110,11 +110,11 @@ def rotate_obj(obj, angle, occ, h, cx=0, cy=0):
         occ.rotate([obj], cx, h - cy, 0, 0, 0, 1, angle)
 
 
-def get_layer_elements(elements, occ, cargs, merge=False, oflag=''):
+def get_group_elements(elements, occ, cargs, merge=False, oflag=''):
     out = []
     for el in elements:
         if isinstance(el, list):
-            out += get_layer_elements(el, occ, cargs, True, '    ')
+            out += get_group_elements(el, occ, cargs, True, '    ')
         else:
             shape = el.__class__.__name__
             print(f'{oflag}{shape}: {el}')
@@ -262,12 +262,9 @@ def gen_mesh_from_svg(filename_svg, filename_out=None,
     cargs = (vbox.x, vbox.y, 0, vbox.width, vbox.height)
 
     layers = []
-    layer_ids = []
     for el in svg:
-        lid = int(el.id.replace('layer', ''))
-        print(f'layer {lid}:')
-        layers.append(get_layer_elements(el, occ, cargs, oflag='  '))
-        layer_ids.append(lid)
+        print(f'group {el.id}:')
+        layers.append(get_group_elements(el, occ, cargs, oflag='  '))
 
     if len(layers) > 1:
         _, ovv = occ.fragment(layers[0], sum_dict(layers[1:]))
@@ -286,7 +283,7 @@ def gen_mesh_from_svg(filename_svg, filename_out=None,
 
     pgs1 = []
     for mid, pg in enumerate(pgs):
-        pgs1.append(model.addPhysicalGroup(2, sum_dict(pg), layer_ids[mid]))
+        pgs1.append(model.addPhysicalGroup(2, sum_dict(pg), mid + 1))
 
     if mesh_size is None:
         mesh_size = vbox.width / 10
