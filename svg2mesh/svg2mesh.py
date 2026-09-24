@@ -125,10 +125,10 @@ def get_group_elements(elements, occ, cargs, merge=False, oflag=''):
                 # rotate_obj(out[-1], -el.rotation, occ, cargs[4])
                 #            el.transform[4], el.transform[5])
 
-            elif shape == 'Ellipse':
+            elif shape in ('Ellipse', 'Circle'):
                 out.append((2, occ.addDisk(el.cx, cargs[4] - el.cy, 0,
                                            el.rx, el.ry)))
-                rotate_obj(out[-1], -el.rotation, occ, cargs[4])                           
+                rotate_obj(out[-1], -el.rotation, occ, cargs[4])
 
             elif shape == 'Path':
                 point_keys = {get_xy(p) for p in el.as_points()}
@@ -183,6 +183,20 @@ def get_group_elements(elements, occ, cargs, merge=False, oflag=''):
                         raise ValueError(f'Unknown Path element "{seg_name}"!')
 
                 loops.append(occ.addCurveLoop(lines))
+                out.append((2, occ.addPlaneSurface(loops)))
+
+            elif shape == 'Polygon':
+                point_keys = {get_xy(p) for p in el.points}
+                points = {p: occ.addPoint(p[0], cargs[4] - p[1], 0)
+                          for p in point_keys}
+
+                lines = [occ.addLine(points[get_xy(el[ii])],
+                                     points[get_xy(el[ii+1])])
+                         for ii in range(len(points) - 1)]
+                lines.append(occ.addLine(points[get_xy(el[-1])],
+                                         points[get_xy(el[0])]))
+
+                loops = [occ.addCurveLoop(lines)]
                 out.append((2, occ.addPlaneSurface(loops)))
 
             else:
