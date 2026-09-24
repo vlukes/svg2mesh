@@ -5,7 +5,7 @@ from ast import literal_eval
 import numpy as nm
 import gmsh
 import meshio
-from svgelements import SVG
+from svgelements import SVG, Group
 
 
 def set_periodic(model, dim=2):
@@ -276,8 +276,9 @@ def gen_mesh_from_svg(filename_svg, filename_out=None,
 
     layers = []
     for el in svg:
-        print(f'group {el.id}:')
-        layers.append(get_group_elements(el, occ, cargs, oflag='  '))
+        if isinstance(el, Group):
+            print(f'group {el.id}:')
+            layers.append(get_group_elements(el, occ, cargs, oflag='  '))
 
     if len(layers) > 1:
         _, ovv = occ.fragment(layers[0], sum_dict(layers[1:]))
