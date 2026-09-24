@@ -299,7 +299,7 @@ def gen_mesh_from_svg(filename_svg, filename_out=None,
         pgs1.append(model.addPhysicalGroup(2, sum_dict(pg), mid + 1))
 
     if mesh_size is None:
-        mesh_size = vbox.width / 10
+        mesh_size = cargs[2] / 10
 
     if isinstance(mesh_size, (int, float)):
         ms = [mesh_size] * len(pgs1)
