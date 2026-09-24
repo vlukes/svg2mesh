@@ -78,13 +78,11 @@ svg2mesh geometry.svg -e
 
 ## Input Geometry
 
-The input geometry must be provided as a **plain** SVG file.
-
 Each physical (material) group must be defined in a separate SVG group (layer).
 These groups are used to identify individual material regions in the generated
 mesh.
 
-All SVG objects should be defined as paths.
+All SVG objects should be defined as paths, rectangles, circles or polygons.
 
 
 ## Examples
