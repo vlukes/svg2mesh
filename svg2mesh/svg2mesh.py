@@ -11,7 +11,7 @@ from svgelements import SVG
 def set_periodic(model, dim=2):
     """
     Set mesh periodic.
-    
+
     Inputs
     ======
     model: gmsh.model
@@ -47,7 +47,7 @@ def set_periodic(model, dim=2):
             dist = nm.linalg.norm(bnd[sidxs, 1:] - dv - bnd[m, 1:], axis=1)
             idx = nm.where(dist < (dd * tol))[0]
             pairs.append((m, sidxs[idx[0]]))
-        
+
         pairs = nm.array(pairs)
         args = tuple(bnd[pairs, 0].astype(nm.int32).T) + tuple(dv)
         _set_periodic(*args)
@@ -56,7 +56,7 @@ def set_periodic(model, dim=2):
 def set_mesh_size(model, pgroups, msize, dim=2):
     """
     Set mesh size individually to each physical group.
-    
+
     Inputs
     ======
     model: gmsh.model
@@ -119,22 +119,22 @@ def get_group_elements(elements, occ, cargs, merge=False, oflag=''):
             shape = el.__class__.__name__
             print(f'{oflag}{shape}: {el}')
             if shape == 'Rect':
-                y = cargs[4] - el.y - el.height
+                y = cargs[3] - el.y - el.height
                 out.append((2, occ.addRectangle(el.x, y, 0,
                                                 el.width, el.height)))
-                # rotate_obj(out[-1], -el.rotation, occ, cargs[4])
+                # rotate_obj(out[-1], -el.rotation, occ, cargs[3])
                 #            el.transform[4], el.transform[5])
 
             elif shape in ('Ellipse', 'Circle'):
-                out.append((2, occ.addDisk(el.cx, cargs[4] - el.cy, 0,
+                out.append((2, occ.addDisk(el.cx, cargs[3] - el.cy, 0,
                                            el.rx, el.ry)))
-                rotate_obj(out[-1], -el.rotation, occ, cargs[4])
+                rotate_obj(out[-1], -el.rotation, occ, cargs[3])
 
             elif shape == 'Path':
                 point_keys = {get_xy(p) for p in el.as_points()}
-                points = {p: occ.addPoint(p[0], cargs[4] - p[1], 0)
+                points = {p: occ.addPoint(p[0], cargs[3] - p[1], 0)
                           for p in point_keys}
-                
+
                 loops, lines = [], []
                 for seg in el:
                     seg_name = seg.__class__.__name__
@@ -156,27 +156,27 @@ def get_group_elements(elements, occ, cargs, merge=False, oflag=''):
                         p1, c12, p2 = (get_xy(seg.start), get_xy(seg.control),
                                        get_xy(seg.end))
                         c1, c2 = quadratic_to_cubic(p1, c12, p2)
-                        points[c1] = occ.addPoint(c1[0], cargs[4] - c1[1], 0)
-                        points[c2] = occ.addPoint(c2[0], cargs[4] - c2[1], 0)
+                        points[c1] = occ.addPoint(c1[0], cargs[3] - c1[1], 0)
+                        points[c2] = occ.addPoint(c2[0], cargs[3] - c2[1], 0)
                         lines.append(occ.addBezier([points[p1], points[c1],
                                                     points[c2], points[p2]]))
-                    
+
                     elif seg_name == 'CubicBezier':
                         p1, p2 = get_xy(seg.start), get_xy(seg.end)
                         c1, c2 = get_xy(seg.control1), get_xy(seg.control2)
                         lines.append(occ.addBezier([points[p1], points[c1],
                                                     points[c2], points[p2]]))
-                    
+
                     elif seg_name == 'Arc':
                         apoints = [get_xy(seg.point(t))
                                    for t in nm.linspace(0, 1, 30)]
                         spoints = []
                         for apt in apoints:
                             if apt not in points:
-                                y = cargs[4] - apt[1]
+                                y = cargs[3] - apt[1]
                                 points[apt] = occ.addPoint(apt[0], y, 0)
                             spoints.append(points[apt])
-                        
+
                         lines.append(occ.addBSpline(spoints))
 
                     else:
@@ -187,7 +187,7 @@ def get_group_elements(elements, occ, cargs, merge=False, oflag=''):
 
             elif shape == 'Polygon':
                 point_keys = {get_xy(p) for p in el.points}
-                points = {p: occ.addPoint(p[0], cargs[4] - p[1], 0)
+                points = {p: occ.addPoint(p[0], cargs[3] - p[1], 0)
                           for p in point_keys}
 
                 lines = [occ.addLine(points[get_xy(el[ii])],
@@ -209,9 +209,9 @@ def get_group_elements(elements, occ, cargs, merge=False, oflag=''):
 
     # crop to view box
     if cargs and len(out) > 0:
-        cbox1 = (2, occ.addRectangle(*cargs))
-        cbox2 = (2, occ.addRectangle(-cargs[3], -cargs[4], cargs[2],
-                                     3*cargs[3], 3*cargs[4]))
+        cbox1 = (2, occ.addRectangle(cargs[0], cargs[1], 0, cargs[2], cargs[3]))
+        cbox2 = (2, occ.addRectangle(-cargs[2], -cargs[3], 0,
+                                     3*cargs[2], 3*cargs[3]))
         cbox, _ = occ.cut([cbox2], [cbox1])
         out, _ = occ.cut(out, cbox)
 
@@ -272,8 +272,7 @@ def gen_mesh_from_svg(filename_svg, filename_out=None,
     # set ppi=25.4 to keep units in mm
     svg = SVG.parse(filename_svg, ppi=25.4)
 
-    vbox = svg.viewbox
-    cargs = (vbox.x, vbox.y, 0, vbox.width, vbox.height)
+    cargs = svg.bbox()
 
     layers = []
     for el in svg:
@@ -340,7 +339,7 @@ def gen_mesh_from_svg(filename_svg, filename_out=None,
     if filename_out is None:
         filename_out = f'{filename_base}.vtk'
 
-    mesh.write(filename_out, binary=False)   
+    mesh.write(filename_out, binary=False)
     print(f'output file: {filename_out}')
 
     if export_png:
