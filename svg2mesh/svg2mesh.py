@@ -245,6 +245,32 @@ def sum_dict(d):
     return sum(d, [])
 
 
+def svg_from_fig(filename_fig):
+    def get_fig_depths(filename_fig):
+        depths = []
+        with open(filename_fig, 'rt') as f:
+            for line in f:
+                if line.startswith('#') or line.startswith('\t'):
+                    continue
+                sline = line.split()
+                if len(sline) > 6:
+                    depths.append(int(sline[6]))
+
+        return list(set(depths))[::-1]
+
+    filename_base = os.path.splitext(filename_fig)[0]
+    filename_svg_tmp = f'{filename_base}_tmp.svg'
+
+    out = []
+    for depth in get_fig_depths(filename_fig):
+        args = f'-L svg -D +{depth} {filename_fig} {filename_svg_tmp}'
+        os.system(f'fig2dev {args}')
+        svg_layer = SVG.parse(filename_svg_tmp, ppi=25.4)
+        out.append(svg_layer[0])
+
+    return out
+
+
 def gen_mesh_from_svg(filename_svg, filename_out=None,
                       mesh_size=None, unit_cell=False,
                       periodic=False, export_png=False):
@@ -268,14 +294,17 @@ def gen_mesh_from_svg(filename_svg, filename_out=None,
     """
     gmsh, model, occ = gmsh_init()
 
-    # set ppi=25.4 to keep units in mm
-    svg = SVG.parse(filename_svg, ppi=25.4)
-
-    cargs = svg.bbox()
+    if filename_svg.endswith('.fig'):
+        svg = svg_from_fig(filename_svg)
+        cargs = svg[0].bbox() if len(svg) > 0 else None
+    else:
+        # set ppi=25.4 to keep units in mm
+        svg = SVG.parse(filename_svg, ppi=25.4)
+        cargs = svg.bbox()
 
     layers = []
     for el in svg:
-        if isinstance(el, Group):
+        if type(el) in [Group, list]:
             print(f'group {el.id}:')
             layer = get_group_elements(el, occ, cargs, oflag='  ')
             if len(layer) > 0:
