@@ -199,7 +199,7 @@ def get_group_elements(elements, occ, cargs, merge=False, oflag=''):
                 out.append((2, occ.addPlaneSurface(loops)))
 
             else:
-                raise ValueError(f'Unknown SVG element "{shape}"!')
+                print(f'Unknown SVG element "{shape}"!')
 
 
     # merge grouped objects
@@ -277,7 +277,9 @@ def gen_mesh_from_svg(filename_svg, filename_out=None,
     for el in svg:
         if isinstance(el, Group):
             print(f'group {el.id}:')
-            layers.append(get_group_elements(el, occ, cargs, oflag='  '))
+            layer = get_group_elements(el, occ, cargs, oflag='  ')
+            if len(layer) > 0:
+                layers.append(layer)
 
     if len(layers) > 1:
         _, ovv = occ.fragment(layers[0], sum_dict(layers[1:]))
