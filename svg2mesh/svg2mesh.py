@@ -15,8 +15,8 @@ def set_periodic(model, dim=2):
     ======
     model: gmsh.model
         GMSH model
-    dx, dy, dz: floats
-        Domain dimensions
+    dim: int
+        Problem dimension
     """
     def _set_periodic(master, slave, dx, dy, dz):
         for m, s in zip(master, slave):
@@ -109,29 +109,48 @@ def rotate_obj(obj, angle, occ, h, cx=0, cy=0):
         occ.rotate([obj], cx, h - cy, 0, 0, 0, 1, angle)
 
 
-def get_group_elements(elements, occ, cargs, merge=False, oflag=''):
+def get_group_elements(elements, occ, bbox, merge=False, oflag=''):
+    """
+    Convert SVG elements to GMSH/OCC objects.
+
+    Inputs
+    ======
+    elements: list of svgelements
+        List of SVG elements
+    occ: gmsh.model.occ
+        GMSH OCC engine
+    bbox: tuple
+        Bounding box
+    merge: bool
+        If true, merge objects in a layer
+
+    Outputs
+    =======
+    out: list
+        List of OCC objects
+    """
     out = []
     for el in elements:
         if isinstance(el, list):
-            out += get_group_elements(el, occ, cargs, True, '    ')
+            out += get_group_elements(el, occ, bbox, True, '    ')
         else:
             shape = el.__class__.__name__
             print(f'{oflag}{shape}: {el}')
             if shape == 'Rect':
-                y = cargs[3] - el.y - el.height
+                y = bbox[3] - el.y - el.height
                 out.append((2, occ.addRectangle(el.x, y, 0,
                                                 el.width, el.height)))
-                # rotate_obj(out[-1], -el.rotation, occ, cargs[3])
+                # rotate_obj(out[-1], -el.rotation, occ, bbox[3])
                 #            el.transform[4], el.transform[5])
 
             elif shape in ('Ellipse', 'Circle'):
-                out.append((2, occ.addDisk(el.cx, cargs[3] - el.cy, 0,
+                out.append((2, occ.addDisk(el.cx, bbox[3] - el.cy, 0,
                                            el.rx, el.ry)))
-                rotate_obj(out[-1], -el.rotation, occ, cargs[3])
+                rotate_obj(out[-1], -el.rotation, occ, bbox[3])
 
             elif shape == 'Path':
                 point_keys = {get_xy(p) for p in el.as_points()}
-                points = {p: occ.addPoint(p[0], cargs[3] - p[1], 0)
+                points = {p: occ.addPoint(p[0], bbox[3] - p[1], 0)
                           for p in point_keys}
 
                 loops, lines = [], []
@@ -155,8 +174,8 @@ def get_group_elements(elements, occ, cargs, merge=False, oflag=''):
                         p1, c12, p2 = (get_xy(seg.start), get_xy(seg.control),
                                        get_xy(seg.end))
                         c1, c2 = quadratic_to_cubic(p1, c12, p2)
-                        points[c1] = occ.addPoint(c1[0], cargs[3] - c1[1], 0)
-                        points[c2] = occ.addPoint(c2[0], cargs[3] - c2[1], 0)
+                        points[c1] = occ.addPoint(c1[0], bbox[3] - c1[1], 0)
+                        points[c2] = occ.addPoint(c2[0], bbox[3] - c2[1], 0)
                         lines.append(occ.addBezier([points[p1], points[c1],
                                                     points[c2], points[p2]]))
 
@@ -172,7 +191,7 @@ def get_group_elements(elements, occ, cargs, merge=False, oflag=''):
                         spoints = []
                         for apt in apoints:
                             if apt not in points:
-                                y = cargs[3] - apt[1]
+                                y = bbox[3] - apt[1]
                                 points[apt] = occ.addPoint(apt[0], y, 0)
                             spoints.append(points[apt])
 
@@ -186,7 +205,7 @@ def get_group_elements(elements, occ, cargs, merge=False, oflag=''):
 
             elif shape == 'Polygon':
                 point_keys = {get_xy(p) for p in el.points}
-                points = {p: occ.addPoint(p[0], cargs[3] - p[1], 0)
+                points = {p: occ.addPoint(p[0], bbox[3] - p[1], 0)
                           for p in point_keys}
 
                 lines = [occ.addLine(points[get_xy(el[ii])],
@@ -207,10 +226,10 @@ def get_group_elements(elements, occ, cargs, merge=False, oflag=''):
         out, _ = occ.fuse(out[:1], out[1:])
 
     # crop to view box
-    if cargs and len(out) > 0:
-        cbox1 = (2, occ.addRectangle(cargs[0], cargs[1], 0, cargs[2], cargs[3]))
-        cbox2 = (2, occ.addRectangle(-cargs[2], -cargs[3], 0,
-                                     3*cargs[2], 3*cargs[3]))
+    if bbox and len(out) > 0:
+        cbox1 = (2, occ.addRectangle(bbox[0], bbox[1], 0, bbox[2], bbox[3]))
+        cbox2 = (2, occ.addRectangle(-bbox[2], -bbox[3], 0,
+                                     3*bbox[2], 3*bbox[3]))
         cbox, _ = occ.cut([cbox2], [cbox1])
         out, _ = occ.cut(out, cbox)
 
@@ -246,11 +265,24 @@ def sum_dict(d):
 
 
 def svg_from_fig(filename_fig):
+    """
+    Import SVG elements form Xfig file.
+
+    Inputs
+    ======
+    filename_fig: str
+        Xfig filename
+
+    Outputs
+    =======
+    out: list
+        List of SVG layers
+    """
     def get_fig_depths(filename_fig):
         depths = []
         with open(filename_fig, 'rt') as f:
             for line in f:
-                if line.startswith('#') or line.startswith('\t'):
+                if line.startswith(('#', '\t')):
                     continue
                 sline = line.split()
                 if len(sline) > 6:
