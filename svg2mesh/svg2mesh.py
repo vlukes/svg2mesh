@@ -403,7 +403,7 @@ def svg_from_fig(filename_fig):
 
 
 def gen_mesh_from_svg(filename_svg, filename_out=None, mesh_size=None,
-                      unit_cell=False, extrude=None,
+                      unit_cell=False, extrude=None, quads=False,
                       periodic=False, export_png=False, export_svg=False):
     """
     Generate FE mesh from geometry defined by a SVG file.
@@ -419,7 +419,9 @@ def gen_mesh_from_svg(filename_svg, filename_out=None, mesh_size=None,
     unit_cell: bool
         If True, generate periodic unit cell
     extrude (z_max, z_num): tuple or list numbers
-        If True, extrude planar mesh into z-direction.
+        If True, extrude planar mesh into z-direction
+    quads: bool
+        If True, use meshing algorithm for quad elements
     periodic: bool
         If True, generate periodic mesh
     export_png: bool
@@ -480,7 +482,13 @@ def gen_mesh_from_svg(filename_svg, filename_out=None, mesh_size=None,
         set_periodic(model, 2)
 
     set_mesh_size(model, pgs1, ms)
-    gmsh.option.setNumber("Mesh.Algorithm", 2)
+    if quads:
+        gmsh.option.setNumber("Mesh.Algorithm", 8)
+        gmsh.option.setNumber("Mesh.RecombinationAlgorithm", 1)
+        for dim, tag in gmsh.model.getEntities(2):
+            gmsh.model.mesh.setRecombine(dim, tag)
+    else:
+        gmsh.option.setNumber("Mesh.Algorithm", 2)
 
     model.mesh.generate(2)
 
@@ -547,7 +555,8 @@ def parse_args():
                         dest='export_svg', default=False)
     parser.add_argument('-x', '--extrude', action='store',
                         dest='extrude', default=None)
-
+    parser.add_argument('-q', '--quads', action='store_true',
+                        dest='quads', default=False)
 
     return parser.parse_args()
 
@@ -562,6 +571,7 @@ def main():
     gen_mesh_from_svg(args.filename_svg, filename_out=args.filename_out,
                       mesh_size=mesh_size, unit_cell=args.unit_cell,
                       periodic=args.periodic, extrude=args.extrude,
+                      quads=args.quads,
                       export_png=args.export_png, export_svg=args.export_svg)
 
 
