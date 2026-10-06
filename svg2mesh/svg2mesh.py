@@ -332,7 +332,11 @@ def gen_mesh_from_svg(filename_svg, filename_out=None,
     else:
         # set ppi=25.4 to keep units in mm
         svg = SVG.parse(filename_svg, ppi=25.4)
-        cargs = svg.bbox()
+        if hasattr(svg, 'viewbox'):
+            vb = svg.viewbox
+            cargs = [vb.x, vb.y, vb.width, vb.height]
+        else:
+            cargs = svg.bbox()
 
     layers = []
     for el in svg:
@@ -427,7 +431,6 @@ def parse_args():
                         dest='mesh_size', default=None)
     parser.add_argument('-e', '--export-png', action='store_true',
                         dest='export_png', default=False)
-
 
     return parser.parse_args()
 
