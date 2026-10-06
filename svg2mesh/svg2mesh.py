@@ -260,6 +260,50 @@ def save_png(filename_out, filename_png):
     plotter.show(screenshot=filename_png)
 
 
+def save_svg(filename_out, filename_svg):
+    import matplotlib.pyplot as plt
+    import matplotlib.colors as mcolors
+
+    mesh = meshio.read(filename_out)
+    nodes = mesh.points
+    bbox = [nodes.min(axis=0), nodes.max(axis=0)]
+    dims = bbox[1] - bbox[0]
+    nodes[:, 1] = bbox[1][1] - nodes[:, 1]
+    swidth = nm.average(dims) / 1000
+
+    mat_ids = mesh.cell_data['mat_id']
+    umat_ids = nm.unique(nm.hstack(mat_ids))
+    mmat = umat_ids.min()
+    n = umat_ids.max() - mmat + 1
+    colors = [mcolors.to_hex(c) for c in plt.cm.viridis(nm.linspace(0, 1, n))]
+    colors = ['#cccccc'] + colors[::-1]
+
+    svg = [
+        '<?xml version="1.0" encoding="UTF-8" standalone="no"?>',
+        f'<svg',
+        f'  xmlns="http://www.w3.org/2000/svg"',
+        f'  width="{dims[0]}mm"',
+        f'  height="{dims[1]}mm"',
+        f'  viewBox="0 0 {dims[0]} {dims[1]}">',
+        f'<g id="group">',
+    ]
+
+    for icg, cgroup in enumerate(mesh.cells):
+        for ic, cell in enumerate(cgroup.data):
+            points = ' '.join([','.join([str(k) for k in n]) for n in nodes[cell, :2]])
+            svg.append(f'  <polygon')
+            svg.append(f'    points="{points}"')
+            svg.append(f'    fill="{colors[mat_ids[icg][ic] - mmat]}"')
+            svg.append(f'    stroke="#000000"')
+            svg.append(f'    stroke-width="{swidth}" />')
+
+    svg.append('</g>')
+    svg.append('</svg>')
+
+    with open(filename_svg, 'wt', encoding='utf-8') as f:
+        f.write('\n'.join(svg))
+
+
 def sum_dict(d):
     return sum(d, [])
 
@@ -305,7 +349,7 @@ def svg_from_fig(filename_fig):
 
 def gen_mesh_from_svg(filename_svg, filename_out=None,
                       mesh_size=None, unit_cell=False,
-                      periodic=False, export_png=False):
+                      periodic=False, export_png=False, export_svg=False):
     """
     Generate FE mesh from geometry defined by a SVG file.
 
@@ -323,6 +367,8 @@ def gen_mesh_from_svg(filename_svg, filename_out=None,
         If True, generate periodic mesh
     export_png: bool
         If True, save mesh screenshot (PNG)
+    export_svg: bool
+        If True, save mesh screenshot (SVG)
     """
     gmsh, model, occ = gmsh_init()
 
@@ -414,6 +460,11 @@ def gen_mesh_from_svg(filename_svg, filename_out=None,
         save_png(filename_out, filename_png)
         print(f'screenshot file: {filename_png}')
 
+    if export_svg:
+        filename_svg = f'{filename_base}_output.svg'
+        save_svg(filename_out, filename_svg)
+        print(f'screenshot file: {filename_svg}')
+
 
 def parse_args():
     parser = argparse.ArgumentParser(
@@ -429,8 +480,10 @@ def parse_args():
                         dest='periodic', default=False)
     parser.add_argument('-s', '--mesh-size', action='store',
                         dest='mesh_size', default=None)
-    parser.add_argument('-e', '--export-png', action='store_true',
+    parser.add_argument('-e', '--export-mesh-png', action='store_true',
                         dest='export_png', default=False)
+    parser.add_argument('-g', '--export-mesh-svg', action='store_true',
+                        dest='export_svg', default=False)
 
     return parser.parse_args()
 
@@ -444,7 +497,8 @@ def main():
 
     gen_mesh_from_svg(args.filename_svg, filename_out=args.filename_out,
                       mesh_size=mesh_size, unit_cell=args.unit_cell,
-                      periodic=args.periodic, export_png=args.export_png)
+                      periodic=args.periodic,
+                      export_png=args.export_png, export_svg=args.export_svg)
 
 
 if __name__ == '__main__':
