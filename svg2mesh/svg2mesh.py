@@ -7,6 +7,61 @@ import meshio
 from svgelements import SVG, Group
 
 
+def extrude_2d(mesh, vcoors, v0=(0, 0, 1)):
+    """
+    Create solid 3D mesh from a given planar 2D mesh by extruding
+    it in.
+
+    Inputs
+    ======
+    mesh: meshio.Mesh
+        2D planar FE mesh (tri or quad elements)
+    vcoors: list, tuple, or numpy.ndarray
+        Nodal coordinates in the extruding direction
+    v0: list, tuple, or numpy.ndarray
+        Vector of extrusion
+
+    Outputs
+    =======
+    out: meshio.Mesh
+        Solid FE mesh
+    """
+    extrude_map = {
+        'quad': (nm.array([0, 1, 2, 3]), 'hexahedron'),
+        'triangle': (nm.array([0, 1, 2]), 'wedge'),
+    }
+
+    nodes = mesh.points
+    nnd = nodes.shape[0]
+
+    v0 = nm.array(v0)
+    vcoors = nm.array(vcoors)
+    n = len(vcoors) - 1
+
+    enodes = v0 * vcoors[:, None, None] + nodes
+    enodes = enodes.reshape(-1, 3)
+    enode_data = {k: nm.tile(v, n + 1) for k, v in mesh.point_data.items()}
+
+    ecells = []
+    ecell_data = {k: [] for k in mesh.cell_data.keys()}
+
+    for ig, cg in enumerate(mesh.cells):
+        emap, ctype = extrude_map[cg.type]
+        cells0 = nm.hstack([cg.data[:, emap] + nnd, cg.data[:, emap]])
+        cells = nm.arange(n)[:, None, None] * nnd + cells0
+        cells = cells.reshape(-1, cells0.shape[1])
+
+        ecells.append(meshio.CellBlock(ctype, cells))
+
+        for k, v in mesh.cell_data.items():
+            ecell_data[k].append(nm.tile(v[ig], n))
+
+    out = meshio.Mesh(enodes, ecells, enode_data, ecell_data)
+    # fix_element_orientation(out)
+
+    return out
+
+
 def set_periodic(model, dim=2):
     """
     Set mesh periodic.
@@ -347,8 +402,8 @@ def svg_from_fig(filename_fig):
     return out
 
 
-def gen_mesh_from_svg(filename_svg, filename_out=None,
-                      mesh_size=None, unit_cell=False,
+def gen_mesh_from_svg(filename_svg, filename_out=None, mesh_size=None,
+                      unit_cell=False, extrude=None,
                       periodic=False, export_png=False, export_svg=False):
     """
     Generate FE mesh from geometry defined by a SVG file.
@@ -363,6 +418,8 @@ def gen_mesh_from_svg(filename_svg, filename_out=None,
         Size of mesh elements
     unit_cell: bool
         If True, generate periodic unit cell
+    extrude (z_max, z_num): tuple or list numbers
+        If True, extrude planar mesh into z-direction.
     periodic: bool
         If True, generate periodic mesh
     export_png: bool
@@ -447,6 +504,10 @@ def gen_mesh_from_svg(filename_svg, filename_out=None,
             points[:, k] /= d
             points[nm.abs(points[:, k]) < 1e-6, k] = 0.
 
+    if extrude is not None:
+        extrude = [float(k) for k in extrude.split(',')]
+        mesh = extrude_2d(mesh, nm.linspace(0, extrude[0], int(extrude[1])))
+
     print(mesh)
 
     if filename_out is None:
@@ -484,6 +545,9 @@ def parse_args():
                         dest='export_png', default=False)
     parser.add_argument('-g', '--export-mesh-svg', action='store_true',
                         dest='export_svg', default=False)
+    parser.add_argument('-x', '--extrude', action='store',
+                        dest='extrude', default=None)
+
 
     return parser.parse_args()
 
@@ -497,7 +561,7 @@ def main():
 
     gen_mesh_from_svg(args.filename_svg, filename_out=args.filename_out,
                       mesh_size=mesh_size, unit_cell=args.unit_cell,
-                      periodic=args.periodic,
+                      periodic=args.periodic, extrude=args.extrude,
                       export_png=args.export_png, export_svg=args.export_svg)
 
 
