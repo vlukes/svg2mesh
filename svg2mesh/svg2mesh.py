@@ -402,6 +402,42 @@ def svg_from_fig(filename_fig):
     return out
 
 
+def clean_mesh(mesh):
+    """
+    Keep triangle or quad elements only, remove free nodes.
+
+    Inputs
+    ======
+    mesh: meshio.Mesh
+        FE mesh
+
+    Outputs
+    =======
+    mesh: meshio.Mesh
+        FE mesh with cell elements only and no free nodes
+    """
+    nflag = nm.zeros((len(mesh.points), ), dtype=bool)
+    cells, cell_data = [], {k: [] for k in mesh.cell_data}
+    for ig, cg in enumerate(mesh.cells):
+        if cg.type in ['triangle', 'quad']:
+            nflag[cg.data] = True
+            cells.append(cg)
+            for k, v in mesh.cell_data.items():
+                cell_data[k].append(v[ig])
+
+    if not nm.all(nflag):
+        remap = -nm.ones((mesh.points.shape[0],), dtype=nm.int64)
+        remap[nflag] = nm.arange(nm.sum(nflag))
+        nodes = mesh.points[nflag]
+        point_data = {k: v[nflag] for k, v in mesh.point_data.items()}
+        for cg in cells:
+            cg.data = remap[cg.data]
+    else:
+        nodes, point_data = mesh.points, mesh.point_data
+
+    return meshio.Mesh(nodes, cells, point_data, cell_data)
+
+
 def gen_mesh_from_svg(filename_svg, filename_out=None, mesh_size=None,
                       unit_cell=False, extrude=None, quads=False,
                       periodic=False, export_png=False, export_svg=False):
@@ -502,6 +538,8 @@ def gen_mesh_from_svg(filename_svg, filename_out=None, mesh_size=None,
     mesh.cell_data = {'mat_id': mesh.cell_data['gmsh:physical']}
     mesh.point_data = {}
     mesh.cell_sets = None
+
+    mesh = clean_mesh(mesh)
 
     if unit_cell:
         points = mesh.points
